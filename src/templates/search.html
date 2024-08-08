@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Search | Novel Downloader</title>
+    </head>
+
+    <script>
+        function openURL()
+        {
+            let data = document.getElementById("url-input").value;
+            data = data.replaceAll(" ", "+");
+            
+            const a = document.createElement('a');
+            a.href = "/search?query=" + data;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+
+    <body>
+        <h1>Enter Novel Name</h1>
+        <input id="url-input" placeholder="Enter here:" autofocus>
+        <input type="button" value="Open" onclick="openURL();">
+    </body>
+</html>

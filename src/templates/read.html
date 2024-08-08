@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Read | Novel Downloader</title>
+    </head>
+    <script>
+        function openURL(index)
+        {
+            const a = document.createElement('a');
+            a.href = "/read?chapter=" + index;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+
+    <style>
+        .read-display
+        {
+            display: flex;
+        }
+
+        .list
+        {
+            width: 38%;
+            height: 500px;
+            border: 2px solid black;
+            margin-right: 2%;
+        }
+
+        .list-title
+        {
+            text-align: center;
+            height: 5%;
+            font-size: 24px;
+        }
+
+        .list-content
+        {
+            float: bottom;
+            height: 85%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-content: center;
+            overflow: scroll;
+        }
+
+        .list-content input
+        {
+            text-align: center;
+            width: 96%;
+            margin: 2%;
+            padding: 4px;
+            font-size: 16px;
+        }
+
+        .read
+        {
+            float: right;
+            width: 60%;
+            height: 500px;
+            align-self: center;
+            overflow: scroll;
+        }
+
+        .read-title
+        {
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .read-book
+        {
+            width: 100%;
+            font-size: 18px;
+        }
+    </style>
+
+    <body>
+        <p style="font-size: 20px; text-align: center;">
+            <a href="/">Go To Search </a>
+            <a href="{{ url_for('get_download') }}"> Download</a>
+        </p>
+        <hr style="border: 1px solid black;">
+        <br>
+
+        <div class="read-display">
+
+            <div class="list">
+                <p class="list-title">Chapters</p>
+                <div class="list-content">
+                    {% for chapter in novel.chapters %}
+                        {% if index == loop.index0 %}
+                            <input type="button" style="border: 2px solid black;" value="Chapter {{ loop.index }}" onclick="openURL({{ loop.index0 }})">
+                        {% else %}
+                            <input type="button" value="Chapter {{ loop.index }}" onclick="openURL({{ loop.index0 }})">
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="read">
+                <p class="read-title">{{ novel }}</p>
+                <p class="read-book">
+                    {{ novel.chapters[index].text|safe }}
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Search | Novel Downloader</title>
+    </head>
+
+    <script>
+        function openURL()
+        {
+            let data = document.getElementById("url-input").value;
+            data = data.replaceAll(" ", "+");
+
+            const a = document.createElement('a');
+            a.href = "/search?query=" + data;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+
+    <style>
+        .results
+        {
+            width: 100%;
+            height: 300px;
+            border: 2px solid black;
+            display: flex;
+            flex-flow: row wrap;
+            justify-content: space-around;
+            overflow: scroll;
+        }
+
+        .result
+        {
+            height: 90%;
+            text-align: center;
+            margin: 12px 0px 12px 0px;
+            cursor: pointer;
+        }
+
+        .result p {
+            margin: 8px 0px 12px 0px;
+        }
+
+        .result img
+        {
+            height: 90%;
+        }
+
+        .loader {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            visibility: hidden;
+            border: 16px solid LightGrey;
+            border-top: 16px solid black;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <body>
+        <h1>Enter Anime Name</h1>
+        <input id="url-input" placeholder="Enter here:" autofocus>
+        <input type="button" value="Open" onclick="openURL();">
+
+        <div class="results">
+            {% if not novels %}
+                No Results
+            {% else %}
+                {% for novel in novels %}
+                <div class="result" onclick="location.href='/read?novel-title={{ novel.title }}'; document.getElementById('loading').style.visibility = 'visible'">
+                    <img src="{{ novel.cover_image }}" alt="Image Not Found">
+                    {% if novel.title|length > 30 %}
+                        <p>{{ novel.title[:27] }}...</p>
+                    {% else %}
+                        <p>{{ novel.title }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <br>
+        <div class="loader" id="loading"></div>
+    </body>
+</html>

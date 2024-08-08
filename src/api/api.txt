@@ -1,0 +1,186 @@
+import requests
+import concurrent.futures
+from bs4 import BeautifulSoup
+from random import choice
+from dataclasses import dataclass
+from api.user_agents import USER_AGENTS
+
+
+BASE_URL = "https://www.readlightnovel.meme/"
+
+SEARCH_URL = "https://www.readlightnovel.meme/search/autocomplete"
+
+MAX_WORKERS = 30
+
+
+@dataclass
+class Chapter:
+    title: str
+    url: str
+    text: str
+
+    def __repr__(self) -> str:
+        return f"{self.title}: {self.url}"
+
+    def get_info(self) -> None:
+        self.title, self.text = get_chapter_info(self)
+
+
+@dataclass
+class Novel:
+    title: str
+    url: str
+    cover_image: str
+    author: str
+    chapters: list[Chapter]
+
+    def __repr__(self) -> str:
+
+        return f"{self.title} by {self.author}"
+
+    def get_chapters(self, only_links: bool = False, print_info: bool = False, max_workers: int = 0) -> None:
+
+        self.chapters = get_chapters(self)
+
+        if only_links:
+            return
+
+        if not max_workers:
+            max_workers = MAX_WORKERS
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_url = {executor.submit(chapter.get_info): chapter for chapter in self.chapters}
+            for future in concurrent.futures.as_completed(future_to_url):
+                chapter = future_to_url.get(future)
+                try:
+                    future.result()
+                except Exception as e:
+                    if print_info:
+                        print(f"Error {str(e)}: {chapter.url}")
+                else:
+                    if print_info:
+                        print(f"Done: {chapter.url}")
+
+    def get_num_done_chapters(self) -> int:
+
+        num = 0
+        for chapter in self.chapters:
+            if chapter.text != "":
+                num += 1
+
+        return num
+
+    def chapters_have_data(self) -> bool:
+
+        for chapter in self.chapters:
+            if not chapter.title:
+                return False
+
+        return True
+
+
+def get_chapter_info(chapter: Chapter) -> tuple:
+
+    while True:
+        try:
+            response = requests.get(chapter.url, headers={
+                "User-Agent": choice(USER_AGENTS)
+            })
+            break
+        except Exception:
+            pass
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    title = soup.find("a", attrs={"class": "black-link"}).parent.text.strip()
+
+    soup = soup.find("div", attrs={"id": "growfoodsmart"})
+
+    return title, soup.prettify()
+
+
+def get_chapters(novel: Novel) -> list[Chapter] | None:
+
+    while True:
+        try:
+            response = requests.get(novel.url, headers={
+                "User-Agent": choice(USER_AGENTS)
+            })
+            break
+        except Exception:
+            pass
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    div = soup.find("div", attrs={"class": "novel"})
+
+    for item in div.find("div", attrs={"class": "novel-left"}).find("div", attrs={"class": "novel-details"}):
+        try:
+            if item.div.h3.text == "Author(s)":
+                for i in item.children:
+                    try:
+                        novel.author = i.ul.text.strip()
+                    except AttributeError:
+                        continue
+        except AttributeError:
+            continue
+
+    uls = soup.find_all("ul", {"class": "chapter-chs"})
+
+    if not uls:
+        return None
+
+    links = []
+    for ul in uls:
+        for li in ul.children:
+            if li.name == "li":
+                links.append(li.a.get("href"))
+
+    return [Chapter("", link, "") for link in links]
+
+
+def search(query: str) -> list[Novel]:
+
+    payload = {
+        "q": query
+    }
+
+    while True:
+        try:
+            response = requests.post(SEARCH_URL, data=payload, headers={
+                "User-Agent": choice(USER_AGENTS),
+                "X-Requested-With": "XMLHttpRequest"
+            })
+            break
+        except Exception:
+            pass
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    novels = []
+    for a in soup.find_all("a"):
+        url = a.get("href")
+        cover_image = a.span.img.get("src")
+        title = a.span.next_sibling.text
+        novels.append(Novel(title, url, cover_image, "", []))
+
+    return novels
+
+
+"""
+novel = search("never die")[1]
+
+novel.get_chapters(print_info=True)
+"""
+
+
+
+"""
+{% for chapter in novel.chapters %}
+    {% if loop.index == 1 %}
+        <input type="button" style="border: 2px solid black;" value="{{ chapter.title }}" onclick="document.getElementsByClassName('read-book')[0].innerHTML = {{ chapter.text }}; selectChoice(this);">
+    {% else %}
+        <input type="button" value="{{ chapter.title }}" onclick="document.getElementsByClassName('read-book')[0].innerHTML = {{ chapter.text }}; selectChoice(this);">
+    {% endif %}
+{% endfor %}
+"""
